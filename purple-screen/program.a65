@@ -1,0 +1,15 @@
+main:
+    sep #$20 : .as
+    lda #$80
+    sta $2100
+    lda #$13
+    sta $2122
+    lda #$fc
+    sta $2122
+    lda #$0f
+    sta $2100
+    stp
+
+handle_nmi:
+handle_irq:
+    rts

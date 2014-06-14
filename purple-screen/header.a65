@@ -1,0 +1,95 @@
+*= $C0FF00
+; zero entire header
+.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+*= $C0FF00
+; reset vector
+reset_emu:
+    sei
+    clc
+    xce
+    rep #$20 : .al
+    lda #$1fff
+    tcs
+    jmp @main
+
+; nmi vector
+nmi_native:
+    php
+    rep #$30 : .al : .xl
+    pha
+    phx
+    phy
+    phd
+    phb
+    jsl @handle_nmi
+    rep #$30 : .al : .xl
+interrupt_exit:
+    plb
+    pld
+    ply
+    plx
+    pla
+    plp
+    rti
+
+; irq vector
+irq_native:
+    php
+    rep #$30 : .al : .xl
+    pha
+    phx
+    phy
+    phd
+    phb
+    jsl @handle_irq
+    rep #$30 : .al : .xl
+    bra interrupt_exit
+
+; error vectors
+abt_emu: abt_native:
+brk_emu: brk_native:
+cop_emu: cop_native:
+irq_emu:
+nmi_emu:
+-   wai
+    lda $c0ffee
+    bra -
+
+*= $C0FFB0
+; Zero the area from $FFB0 - $FFFF to ensure that the linker won't
+; get clever and fill it with small pieces of code.
+.word 0,0,0,0,0,0,0,0
+.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+.word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+
+*= $C0FFB0
+.byt "PM"                       ; 2 bytes - company id
+.byt "PSCR"                     ; 4 bytes - rom id
+
+*= $C0FFC0
+.byt "PURPLE SCREEN        "    ; 21 bytes - rom title
+
+*= $C0FFD5      .byt $31        ; fast HiROM
+*= $C0FFD6      .byt $00        ; rom type = no sram
+*= $C0FFD7      .byt $08        ; rom size = 256 kByte
+*= $C0FFD8      .byt $00        ; sram size = 0 kBit
+*= $C0FFD9      .byt $09        ; country: germ/aust/switz
+*= $C0FFDA      .byt $33        ; company id flag
+
+*= $C0FFDC      .word 0,0       ; checksums
+
+*= $C0FFE4      .word cop_native
+*= $C0FFE6      .word brk_native
+*= $C0FFE8      .word abt_native
+*= $C0FFEA      .word nmi_native
+*= $C0FFEE      .word irq_native
+*= $C0FFF4      .word cop_emu
+*= $C0FFF8      .word abt_emu
+*= $C0FFFA      .word nmi_emu
+*= $C0FFFC      .word reset_emu
+*= $C0FFFE      .word brk_emu
+*= $C0FFFE      .word irq_emu
